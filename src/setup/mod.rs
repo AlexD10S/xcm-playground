@@ -15,6 +15,7 @@
 // along with Polkadot.  If not, see <http://www.gnu.org/licenses/>.
 #![allow(dead_code)]
 pub mod parachain;
+pub mod foreign_parachain;
 pub mod relay_chain;
 
 use core::{borrow::Borrow, marker::PhantomData};
@@ -52,18 +53,9 @@ decl_test_parachain! {
 
 decl_test_parachain! {
 	pub struct ParaB {
-		Runtime = parachain::Runtime,
-		XcmpMessageHandler = parachain::MsgQueue,
-		DmpMessageHandler = parachain::MsgQueue,
-		new_ext = para_ext(2),
-	}
-}
-
-decl_test_parachain! {
-	pub struct ParaC {
-		Runtime = parachain::Runtime,
-		XcmpMessageHandler = parachain::MsgQueue,
-		DmpMessageHandler = parachain::MsgQueue,
+		Runtime = foreign_parachain::Runtime,
+		XcmpMessageHandler = foreign_parachain::MsgQueue,
+		DmpMessageHandler = foreign_parachain::MsgQueue,
 		new_ext = para_ext(2),
 	}
 }
@@ -82,7 +74,6 @@ decl_test_network! {
 		parachains = vec![
 			(1, ParaA),
 			(2, ParaB),
-			(3, ParaC),
 		],
 	}
 }

@@ -34,4 +34,14 @@ or a single test:
 Teleport
 `cargo test -p xcm-examples trap_and_claim_assets -- --nocapture`
 
+Reserve based transfer
+`cargo test -p xcm-playground reserve_asset_transfer_nft_para_to_para -- --nocapture`
 
+#### Integrations tests
+Using the Parachains Integration Tests tool: https://github.com/paritytech/parachains-integration-tests
+
+```sh
+cd src/integration_tests
+chmod +x zombienet-macos
+parachains-integration-tests -m checker -t <tests_path>
+```

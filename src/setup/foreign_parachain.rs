@@ -36,7 +36,7 @@ use polkadot_parachain::primitives::{
 	DmpMessageHandler, Id as ParaId, Sibling, XcmpMessageFormat, XcmpMessageHandler,
 };
 use polkadot_primitives::BlockNumber as RelayBlockNumber;
-use sp_core::{ConstU128, ConstU32, H256};
+use sp_core::{ConstU32, H256};
 use sp_runtime::{
 	testing::Header,
 	traits::{Get, Hash, IdentityLookup},
@@ -46,12 +46,12 @@ use sp_runtime::{
 use sp_std::{cell::RefCell, prelude::*};
 use xcm::{latest::prelude::*, VersionedXcm};
 use xcm_builder::{
-	AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowTopLevelPaidExecutionFrom,
+	AccountId32Aliases, Account32Hash, AllowExplicitUnpaidExecutionFrom, AllowTopLevelPaidExecutionFrom,
 	AsPrefixedGeneralIndex, ConvertedConcreteId, CurrencyAdapter as XcmCurrencyAdapter,
 	EnsureXcmOrigin, FixedRateOfFungible, FixedWeightBounds, FungiblesAdapter, IsConcrete,
 	NativeAsset, NoChecking, NonFungiblesAdapter, ParentAsSuperuser, ParentIsPreset,
 	SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
-	SovereignSignedViaLocation, WithComputedOrigin,
+	SovereignSignedViaLocation, WithComputedOrigin
 };
 use xcm_executor::{
 	traits::{AssetExchange, Convert, JustTry},
@@ -177,23 +177,23 @@ impl EnsureOriginWithArg<RuntimeOrigin, MultiLocation> for ForeignCreators {
 
 impl pallet_uniques::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type CollectionId = u32;
-	type ItemId = u32;
+	type CollectionId = MultiLocation;
+	type ItemId = AssetInstance;
 	type Currency = Balances;
-	type CreateOrigin = AsEnsureOriginWithArg<EnsureSigned<AccountId>>;
-	type ForceOrigin = EnsureRoot<AccountId>;
-	type CollectionDeposit = ConstU128<1_000>;
-	type ItemDeposit = ConstU128<1_000>;
-	type MetadataDepositBase = ConstU128<1_000>;
-	type AttributeDepositBase = ConstU128<1_000>;
-	type DepositPerByte = ConstU128<1>;
+	type CreateOrigin = ForeignCreators;
+	type ForceOrigin = frame_system::EnsureRoot<AccountId>;
+	type CollectionDeposit = frame_support::traits::ConstU128<1_000>;
+	type ItemDeposit = frame_support::traits::ConstU128<1_000>;
+	type MetadataDepositBase = frame_support::traits::ConstU128<1_000>;
+	type AttributeDepositBase = frame_support::traits::ConstU128<1_000>;
+	type DepositPerByte = frame_support::traits::ConstU128<1>;
 	type StringLimit = ConstU32<64>;
 	type KeyLimit = ConstU32<64>;
 	type ValueLimit = ConstU32<128>;
 	type Locker = ();
 	type WeightInfo = ();
 	#[cfg(feature = "runtime-benchmarks")]
-	type Helper = ();
+	type Helper = UniquesHelper;
 }
 
 parameter_types! {
@@ -351,11 +351,33 @@ impl AssetExchange for TestAssetExchange {
 	}
 }
 
+pub type LocationToAccountId = (
+	ParentIsPreset<AccountId>,
+	SiblingParachainConvertsVia<Sibling, AccountId>,
+	AccountId32Aliases<RelayNetwork, AccountId>,
+	Account32Hash<(), AccountId>,
+);
+
+pub type LocalAssetTransactor = (
+	XcmCurrencyAdapter<Balances, IsConcrete<KsmLocation>, LocationToAccountId, AccountId, ()>,
+	NonFungiblesAdapter<
+		ForeignUniques,
+		ConvertedConcreteId<MultiLocation, AssetInstance, JustTry, JustTry>,
+		SovereignAccountOf,
+		AccountId,
+		NoChecking,
+		(),
+	>,
+);
+
+
 pub struct XcmConfig;
 impl Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
+	/// How to send an onward XCM message.
 	type XcmSender = XcmRouter;
-	type AssetTransactor = AssetTransactors;
+	/// How to withdraw and deposit an asset.
+	type AssetTransactor = LocalAssetTransactor;
 	type OriginConverter = XcmOriginToCallOrigin;
 	type IsReserve = (NativeAsset, TrustedReserves);
 	type IsTeleporter = TrustedTeleporters;
@@ -556,7 +578,7 @@ impl pallet_xcm::Config for Runtime {
 	const VERSION_DISCOVERY_QUEUE_SIZE: u32 = 100;
 	type AdvertisedXcmVersion = pallet_xcm::CurrentXcmVersion;
 	type Currency = Balances;
-	type CurrencyMatcher = IsConcrete<TokenLocation>;
+	type CurrencyMatcher = (IsConcrete<TokenLocation>);
 	type TrustedLockers = TrustedLockerCase<TrustedLockPairs>;
 	type SovereignAccountOf = SovereignAccountOf;
 	type MaxLockers = ConstU32<8>;
