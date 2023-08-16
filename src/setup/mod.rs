@@ -56,7 +56,7 @@ decl_test_parachain! {
 		Runtime = foreign_parachain::Runtime,
 		XcmpMessageHandler = foreign_parachain::MsgQueue,
 		DmpMessageHandler = foreign_parachain::MsgQueue,
-		new_ext = para_ext(2),
+		new_ext = foreign_para_ext(2),
 	}
 }
 
@@ -181,6 +181,71 @@ pub fn para_ext(para_id: u32) -> sp_io::TestExternalities {
 	ext
 }
 
+pub fn foreign_para_ext(para_id: u32) -> sp_io::TestExternalities {
+	use foreign_parachain::{MsgQueue, Runtime, System};
+
+	let mut t = frame_system::GenesisConfig::default().build_storage::<Runtime>().unwrap();
+	let other_para_ids = match para_id {
+		1 => [2, 3],
+		2 => [1, 3],
+		3 => [1, 2],
+		_ => panic!("No parachain exists with para_id = {para_id}"),
+	};
+
+	pallet_balances::GenesisConfig::<Runtime> {
+		balances: vec![(ALICE, INITIAL_BALANCE), (relay_sovereign_account_id(), INITIAL_BALANCE), (BOB, INITIAL_BALANCE), (parachain_account_sovereign_account_id(para_id, ALICE), INITIAL_BALANCE)]
+			.into_iter()
+			.chain(other_para_ids.iter().map(
+				// Initial balance of native token for ALICE on all sibling sovereign accounts
+				|&para_id| (sibling_account_sovereign_account_id(para_id, ALICE), INITIAL_BALANCE),
+			))
+			.chain(other_para_ids.iter().map(
+				// Initial balance of native token all sibling sovereign accounts
+				|&para_id| (sibling_sovereign_account_id(para_id), INITIAL_BALANCE),
+			))
+			.collect(),
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
+
+	pallet_assets::GenesisConfig::<Runtime> {
+		assets: vec![
+			(0u128, ADMIN, false, 1000000u128), // Create derivative asset for relay's native token
+		]
+		.into_iter()
+		.chain(other_para_ids.iter().map(|&para_id| (para_id as u128, ADMIN, false, 1u128))) // Derivative assets for the other parachains' native tokens
+		.collect(),
+		metadata: Default::default(),
+		accounts: vec![
+			(0u128, ALICE, INITIAL_BALANCE),
+			(0u128, relay_sovereign_account_id(), INITIAL_BALANCE),
+			(0u128, parachain_account_sovereign_account_id(para_id, ALICE), INITIAL_BALANCE),
+		]
+		.into_iter()
+		.chain(other_para_ids.iter().map(|&para_id| (para_id as u128, ALICE, INITIAL_BALANCE))) // Initial balance for derivatives of other parachains' tokens
+		.chain(other_para_ids.iter().map(|&para_id| {
+			(0u128, sibling_account_sovereign_account_id(para_id, ALICE), INITIAL_BALANCE)
+		})) // Initial balance for sovereign accounts (for fee payment)
+		.chain(
+			other_para_ids
+				.iter()
+				.map(|&para_id| (0u128, sibling_sovereign_account_id(para_id), INITIAL_BALANCE)),
+		) // Initial balance for sovereign accounts (for fee payment)
+		.collect(),
+	}
+	.assimilate_storage(&mut t)
+	.unwrap();
+
+
+	let mut ext = sp_io::TestExternalities::new(t);
+	ext.execute_with(|| {
+		sp_tracing::try_init_simple();
+		System::set_block_number(1);
+		MsgQueue::set_para_id(para_id.into());
+	});
+	ext
+}
+
 pub fn relay_ext() -> sp_io::TestExternalities {
 	use relay_chain::{Runtime, System};
 
@@ -219,9 +284,14 @@ pub fn print_relay_events() {
 
 pub type RelaychainPalletXcm = pallet_xcm::Pallet<relay_chain::Runtime>;
 pub type ParachainPalletXcm = pallet_xcm::Pallet<parachain::Runtime>;
+pub type ForeignParachainPalletXcm = pallet_xcm::Pallet<foreign_parachain::Runtime>;
+
 pub type RelaychainBalances = pallet_balances::Pallet<relay_chain::Runtime>;
 pub type ParachainBalances = pallet_balances::Pallet<parachain::Runtime>;
+pub type ForeignParachainBalances = pallet_balances::Pallet<foreign_parachain::Runtime>;
+
 pub type ParachainAssets = pallet_assets::Pallet<parachain::Runtime>;
+pub type ForeignParachainAssets = pallet_assets::Pallet<foreign_parachain::Runtime>;
 
 /// Prefix for generating alias account for accounts coming  
 /// from chains that use 32 byte long representations.

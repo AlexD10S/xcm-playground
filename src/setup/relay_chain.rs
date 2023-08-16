@@ -33,7 +33,7 @@ use polkadot_parachain::primitives::Id as ParaId;
 use polkadot_runtime_parachains::{configuration, origin, shared, ump};
 use xcm::latest::prelude::*;
 use xcm_builder::{
-	AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowTopLevelPaidExecutionFrom,
+	AccountId32Aliases, AllowUnpaidExecutionFrom, AllowExplicitUnpaidExecutionFrom, AllowTopLevelPaidExecutionFrom,
 	AsPrefixedGeneralIndex, ChildParachainAsNative, ChildParachainConvertsVia,
 	ChildSystemParachainAsSuperuser, ConvertedConcreteId, CurrencyAdapter as XcmCurrencyAdapter,
 	FixedRateOfFungible, FixedWeightBounds, IsConcrete, NoChecking, NonFungiblesAdapter,
@@ -194,16 +194,18 @@ impl Contains<MultiLocation> for ChildrenParachains {
 }
 
 pub type XcmRouter = super::RelayChainXcmRouter;
-pub type Barrier = WithComputedOrigin<
-	(
-		AllowNoteUnlockables,
-		AllowUnlocks,
-		AllowExplicitUnpaidExecutionFrom<ChildrenParachains>,
-		AllowTopLevelPaidExecutionFrom<Everything>,
-	),
-	UniversalLocation,
-	ConstU32<1>,
->;
+// pub type Barrier = WithComputedOrigin<
+// 	(
+// 		AllowNoteUnlockables,
+// 		AllowUnlocks,
+// 		AllowExplicitUnpaidExecutionFrom<ChildrenParachains>,
+// 		AllowTopLevelPaidExecutionFrom<Everything>,
+// 	),
+// 	UniversalLocation,
+// 	ConstU32<1>,
+// >;
+
+pub type Barrier = AllowUnpaidExecutionFrom<Everything>;
 
 pub struct XcmConfig;
 impl Config for XcmConfig {

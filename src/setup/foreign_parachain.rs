@@ -46,7 +46,7 @@ use sp_runtime::{
 use sp_std::{cell::RefCell, prelude::*};
 use xcm::{latest::prelude::*, VersionedXcm};
 use xcm_builder::{
-	AccountId32Aliases, Account32Hash, AllowExplicitUnpaidExecutionFrom, AllowTopLevelPaidExecutionFrom,
+	AccountId32Aliases, Account32Hash, AllowUnpaidExecutionFrom, AllowExplicitUnpaidExecutionFrom, AllowTopLevelPaidExecutionFrom,
 	AsPrefixedGeneralIndex, ConvertedConcreteId, CurrencyAdapter as XcmCurrencyAdapter,
 	EnsureXcmOrigin, FixedRateOfFungible, FixedWeightBounds, FungiblesAdapter, IsConcrete,
 	NativeAsset, NoChecking, NonFungiblesAdapter, ParentAsSuperuser, ParentIsPreset,
@@ -295,15 +295,16 @@ impl Contains<MultiLocation> for ParentRelay {
 }
 
 pub type XcmRouter = super::ParachainXcmRouter<MsgQueue>;
-pub type Barrier = WithComputedOrigin<
-	(
-		AllowNoteUnlockables,
-		AllowExplicitUnpaidExecutionFrom<ParentRelay>,
-		AllowTopLevelPaidExecutionFrom<Everything>,
-	),
-	UniversalLocation,
-	ConstU32<1>,
->;
+// pub type Barrier = WithComputedOrigin<
+// 	(
+// 		AllowNoteUnlockables,
+// 		AllowExplicitUnpaidExecutionFrom<ParentRelay>,
+// 		AllowTopLevelPaidExecutionFrom<Everything>,
+// 	),
+// 	UniversalLocation,
+// 	ConstU32<1>,
+// >;
+pub type Barrier = AllowUnpaidExecutionFrom<Everything>;
 
 parameter_types! {
 	pub NftCollectionOne: MultiAssetFilter
@@ -578,7 +579,7 @@ impl pallet_xcm::Config for Runtime {
 	const VERSION_DISCOVERY_QUEUE_SIZE: u32 = 100;
 	type AdvertisedXcmVersion = pallet_xcm::CurrentXcmVersion;
 	type Currency = Balances;
-	type CurrencyMatcher = (IsConcrete<TokenLocation>);
+	type CurrencyMatcher = IsConcrete<TokenLocation>;
 	type TrustedLockers = TrustedLockerCase<TrustedLockPairs>;
 	type SovereignAccountOf = SovereignAccountOf;
 	type MaxLockers = ConstU32<8>;
