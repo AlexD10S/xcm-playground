@@ -354,7 +354,9 @@ impl AssetExchange for TestAssetExchange {
 pub struct XcmConfig;
 impl Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
+	/// How to send an onward XCM message.
 	type XcmSender = XcmRouter;
+	/// How to withdraw and deposit an asset.
 	type AssetTransactor = AssetTransactors;
 	type OriginConverter = XcmOriginToCallOrigin;
 	type IsReserve = (NativeAsset, TrustedReserves);

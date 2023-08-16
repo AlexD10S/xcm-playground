@@ -30,3 +30,8 @@ or a single test:
             ...
         }
     }
+
+Teleport
+`cargo test -p xcm-examples trap_and_claim_assets -- --nocapture`
+
+
