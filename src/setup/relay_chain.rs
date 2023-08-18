@@ -152,6 +152,7 @@ pub type LocalUniquesTransactor = NonFungiblesAdapter<
 	(),
 >;
 
+/// How to withdraw and deposit an asset.
 pub type AssetTransactors = (LocalBalancesTransactor, LocalUniquesTransactor);
 
 type LocalOriginConverter = (
@@ -198,7 +199,6 @@ pub type XcmRouter = super::RelayChainXcmRouter;
 // 	(
 // 		AllowNoteUnlockables,
 // 		AllowUnlocks,
-// 		AllowExplicitUnpaidExecutionFrom<ChildrenParachains>,
 // 		AllowTopLevelPaidExecutionFrom<Everything>,
 // 	),
 // 	UniversalLocation,
@@ -210,16 +210,25 @@ pub type Barrier = AllowUnpaidExecutionFrom<Everything>;
 pub struct XcmConfig;
 impl Config for XcmConfig {
 	type RuntimeCall = RuntimeCall;
+	 /// How to send an onward XCM message.
 	type XcmSender = XcmRouter;
+	/// How to withdraw and deposit an asset.
 	type AssetTransactor = AssetTransactors;
+	/// How to get a call origin from a `OriginKind` value.
 	type OriginConverter = LocalOriginConverter;
+	 /// Combinations of (Location, Asset) pairs trusted as reserves.
 	type IsReserve = ();
+	/// Combinations of (Location, Asset) pairs trusted as teleporters
 	type IsTeleporter = ();
 	type UniversalLocation = UniversalLocation;
+	/// Whether to execute the given XCM at all.
 	type Barrier = Barrier;
+	/// Handler for estimating weight for XCM execution.
 	type Weigher = FixedWeightBounds<XcmInstructionWeight, RuntimeCall, MaxInstructions>;
+	/// Handler for purchasing weight credit for XCM execution.
 	type Trader = FixedRateOfFungible<TokensPerSecondPerMegabyte, ()>;
 	type ResponseHandler = XcmPallet;
+	 /// Handler for assets in the Holding register after execution.
 	type AssetTrap = XcmPallet;
 	type AssetLocker = XcmPallet;
 	type AssetExchanger = ();

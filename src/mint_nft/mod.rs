@@ -21,14 +21,14 @@ mod tests {
 			admin: parachain_sovereign_account_id(1),
 		});
 
-		let message_fee = relay_chain::estimate_message_fee(4);
+		// let message_fee = relay_chain::estimate_message_fee(4);
 		let create_collection_weight_estimation = Weight::from_parts(1_000_000_000, 10_000);
-		let create_collection_fee_estimation =
-			relay_chain::estimate_fee_for_weight(create_collection_weight_estimation);
+		// let create_collection_fee_estimation =
+		// 	relay_chain::estimate_fee_for_weight(create_collection_weight_estimation);
 		let mint_nft_weight_estimation = Weight::from_parts(1_000_000_000, 10_000);
-		let mint_nft_fee_estimation =
-			relay_chain::estimate_fee_for_weight(mint_nft_weight_estimation);
-		let fees = message_fee + create_collection_fee_estimation + mint_nft_fee_estimation;
+		// let mint_nft_fee_estimation =
+		// 	relay_chain::estimate_fee_for_weight(mint_nft_weight_estimation);
+		// let fees = message_fee + create_collection_fee_estimation + mint_nft_fee_estimation;
 
 		let mint =
 			relay_chain::RuntimeCall::Uniques(pallet_uniques::Call::<relay_chain::Runtime>::mint {
@@ -38,8 +38,8 @@ mod tests {
 			});
 
 		let message = Xcm(vec![
-			WithdrawAsset((Here, fees).into()),
-			BuyExecution { fees: (Here, fees).into(), weight_limit: WeightLimit::Unlimited },
+			// WithdrawAsset((Here, fees).into()),
+			// BuyExecution { fees: (Here, fees).into(), weight_limit: WeightLimit::Unlimited },
 			Transact {
 				origin_kind: OriginKind::SovereignAccount,
 				require_weight_at_most: create_collection_weight_estimation,
